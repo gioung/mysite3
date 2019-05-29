@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="board">
+	<insert id="insert" parameterType="boardvo">
+		<![CDATA[
+		insert into board values(null,#{title },#{contents },0,now(),#{user_no },#{group_no },#{order_no },#{depth });
+	 	]]>	
+	</insert>
+	
+	<select id="getList" resultType="boardvo">
+		<![CDATA[
+		select b.no,b.title,u.name,b.hit,b.reg_date,b.user_no,b.group_no,b.order_no,b.depth 
+		from board b,user u 
+		where b.user_no=u.no 
+		order by group_no desc,order_no asc;
+	 	]]>	
+	</select>
+	
+	<select id="getBoard" resultType="boardvo" parameterType="long">
+		<![CDATA[
+		select * from board where no=#{no };
+		]]>
+	</select>
+	
+	<select id="getMaxGroupid" resultType="long">
+		
+			<![CDATA[
+				select max(group_no)+1 from board; 
+				]]>
+		
+	</select>
+	
+	<select id="getPageList" resultType="boardvo" parameterType="map">
+		<![CDATA[
+			select b.no,b.title,u.name,b.hit,b.reg_date,b.user_no,b.group_no,b.order_no,b.depth 
+			from board b,user u 
+			where b.user_no=u.no 
+			order by group_no desc,order_no asc 
+			limit ${(pageNo -1)*numberListPerPage},${numberListPerPage }; 
+		]]>
+	
+	</select>
+	
+	<select id="getCount" resultType="int">
+		<![CDATA[	
+			select count(*) as count from board
+		]]>
+	</select>
+	
+	<update id="update" parameterType="boardvo">
+		<![CDATA[
+		update board set title=#{title },contents=#{contents } where no=#{no };
+	 	]]>	
+	</update>
+	
+	<update id="updateOrderNo" parameterType="boardvo">
+		<![CDATA[
+		update board set order_no=order_no+1 where group_no = #{group_no } and order_no>=#{order_no };
+	 	]]>	
+	</update>
+	
+	<delete id="delete" parameterType="long">
+		<![CDATA[
+		delete from board where no=#{no };
+		]]>
+	</delete>
+</mapper>
