@@ -1,8 +1,12 @@
 package com.cafe24.mysite.repository.vo;
 
+import javax.validation.constraints.Pattern;
+
 import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.NotEmpty;
+
+import com.cafe24.mysite.validator.constraints.ValidGender;
 
 public class UserVo {
 	
@@ -16,13 +20,20 @@ public class UserVo {
 	@NotEmpty
 	private String email;
 	
+	@Pattern(regexp="^(?=.*[A-Za-z])(?=.*\\d)(?=.*[$@$!%*#?&])[A-Za-z\\d$@$!%*#?&]{8,}$",
+			message="비밀번호는 8자 이상 알파벳, 숫자, 특수문자를 조합하여 작성해야 합니다.")
 	private String password;
+	
+//	@ValidGender
 	private String gender;
+	
 	private String join_date;
+	
+	private String role = "ROLE_ADMIN";
 	@Override
 	public String toString() {
 		return "UserVo [no=" + no + ", name=" + name + ", email=" + email + ", password=" + password + ", gender="
-				+ gender + ", join_date=" + join_date + "]";
+				+ gender + ", join_date=" + join_date + ", role=" + role + "]";
 	}
 	
 	public UserVo() {
@@ -69,4 +80,13 @@ public class UserVo {
 	public void setJoin_date(String join_date) {
 		this.join_date = join_date;
 	}
+
+	public String getRole() {
+		return role;
+	}
+
+	public void setRole(String role) {
+		this.role = role;
+	}
+	
 }

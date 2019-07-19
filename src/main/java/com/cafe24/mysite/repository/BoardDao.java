@@ -13,6 +13,7 @@ import com.cafe24.mysite.repository.vo.BoardVo;
 @Repository
 public class BoardDao {
 	
+	
 	@Autowired
 	private SqlSession sqlSession;
 	

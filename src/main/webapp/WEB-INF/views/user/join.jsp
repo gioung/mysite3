@@ -14,8 +14,8 @@
 <link
 	href="${pageContext.servletContext.contextPath }/assets/css/user.css"
 	rel="stylesheet" type="text/css">
-<script>
-	src="${pageContext.servletContext.contextPath }/assets/js/jquery/jquery-1.9.0.js"></script>
+<script src="${pageContext.servletContext.contextPath }/assets/js/jquery/jquery-1.9.0.js">
+</script>
 <script>
 	$(function() {
 		$('#email').change(function() {
@@ -39,6 +39,7 @@
 										dataType : "json",
 										data : "",
 										success : function(response) {
+											console.log(response);
 											if (response.result != "success") {
 												console.error(response);
 												return;
@@ -58,7 +59,7 @@
 										}
 									}); /* ajax라는 객체가 있다 , 설정값이 많음. */
 
-							console.log(email);
+							
 						});
 	});
 </script>

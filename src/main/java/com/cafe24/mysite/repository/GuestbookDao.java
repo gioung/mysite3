@@ -39,4 +39,9 @@ public class GuestbookDao {
 		List<GuestbookVo> result = sqlSession.selectList( "guestbook.getList" );
 		return result;
 	}
+	
+	public List<GuestbookVo> getList(Long lastno){
+		List<GuestbookVo> result = sqlSession.selectList( "guestbook.getList2", lastno);
+		return result;
+	}
 }

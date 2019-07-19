@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:oauth="http://www.springframework.org/schema/security/oauth2"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+		http://www.springframework.org/schema/security/oauth2 http://www.springframework.org/schema/security/spring-security-oauth2-1.0.xsd
+		http://www.springframework.org/schema/security	http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+		
+		
+	<!-- 
+	    반드시 가지고 있어야 하고, 필터채인을 설정하네.
+		FilterChainProxy
+		Filter Ordering
+		 1. ChannelProcessingFilter
+		 2. SecurityContextPersistenceFilter		( auto-config default )
+		 3. ConcurrentSessionFilter
+		 4. LogoutFilter							( auto-config default )
+		 5. UsernamePasswordAuthenticationFilter	( auto-config default )
+		 6. DefaultLoginPageGeneratingFilter		( auto-config default )
+		 7. CasAuthenticationFilter
+		 8. BasicAuthenticationFilter				( auto-config default )
+		 9. RequestCacheAwareFilter					( auto-config default )
+		10. SecurityContextHolderAwareRequestFilter	( auto-config default )
+		11. JaasApiIntegrationFilter
+		12. RememberMeAuthenticationFilter
+		13. AnonymousAuthenticationFilter			( auto-config default )
+		14. SessionManagementFilter					( auto-config default )
+		15. ExceptionTranslationFilter				( auto-config default )
+		16.	FilterSecurityInterceptor				( auto-config default )	 
+	-->
+	<bean id="springSecurityFilterChain"  class="org.springframework.security.web.FilterChainProxy">
+		<constructor-arg>
+			<list>
+				<security:filter-chain pattern="/favicon.ico" filters="none"/>
+				<security:filter-chain pattern="/assets/**" filters="none"/>
+				<security:filter-chain pattern="/error/*" filters="none"/>
+				<security:filter-chain pattern="/**" filters="
+					securityContextPersistenceFilter,
+					logoutFilter,
+					usernamePasswordProcessingFilter,
+					basicAuthenticationFilter,
+					rememberMeAuthenticationFilter,
+					anonymousProcessingFilter,
+					exceptionTranslationFilter,
+					filterSecurityInterceptor" />
+			</list>
+		</constructor-arg>	
+	</bean>
+
+	
+	<!-- 2. securityContextPersistenceFilter 
+		    securityContext를 관리하는 필터. (필수)
+	-->
+	<bean id="securityContextPersistenceFilter" class="org.springframework.security.web.context.SecurityContextPersistenceFilter"/>	
+
+
+	<!-- 4. LogoutFilter 
+		logout으로 오는 것을 감시한다.
+		customLogoutSuccessHandler - 로그아웃성공하면 메인이지만, API의 경우 로그아웃성공하면 JSON으로 응답
+	-->
+	<bean id="logoutFilter" class="org.springframework.security.web.authentication.logout.LogoutFilter">
+		<constructor-arg>
+			<ref bean="customLogoutSuccessHandler"/>
+		</constructor-arg>
+		<constructor-arg>
+			<list>
+				<ref local="rememberMeServices" />
+				<!-- beans:ref bean="customLogoutSuccessHandler"/-->
+ 				<bean id="logoutHandler" class="org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler">
+ 					<property name="invalidateHttpSession" value="true" />
+ 				</bean>
+ 			</list>
+		</constructor-arg>
+		<!--beans:property name="cookieName" value="${redwwod.SSO.Cookie.Name}" /-->
+		<property name="filterProcessesUrl" value="/user/logout" />
+	</bean>
+
+	<!-- 5. UsernamePasswordAuthenticationFilter
+		로그인 요청하는 경로를 2개 넣기 위하여 (기본적으로는 하나만 제공)
+	 -->
+	<bean id="usernamePasswordProcessingFilter" class="kr.co.sunnyvale.redwood.security.CustomUsernamePasswordAuthenticationFilter">
+		<property name="authenticationManager" ref="authenticationManager" />
+		<property name="rememberMeServices" ref="rememberMeServices" />
+		<property name="authenticationSuccessHandler" ref="customLoginSuccessHandler" />
+		<property name="authenticationFailureHandler" ref="customLoginFailureHandler" />
+		<property name="authenticationDetailsSource" ref="customWebuthenticationDetailsSource" />
+		<property name="usernameParameter" value="userId" />
+		<property name="passwordParameter" value="password" />
+		<property name="filterProcessesUrls">
+			<list value-type="java.lang.String">
+				<value>/user/auth</value>
+				<value>/1.0/user/auth.json</value>
+			</list>
+        </property>		
+	</bean>	
+
+	<!-- 8. BasicAuthenticationFilter 
+		기본 인증과 관련 DI가 된 대상이 우리가 만든것.
+	-->
+	<bean id="basicAuthenticationFilter" class="org.springframework.security.web.authentication.www.BasicAuthenticationFilter">
+		<constructor-arg index="0">
+			<ref bean="authenticationManager"/>
+		</constructor-arg>
+		<constructor-arg index="1">
+			<ref bean="authenticationEntryPoint"/>
+		</constructor-arg>
+		<property name="authenticationDetailsSource" ref="customWebuthenticationDetailsSource"/>
+    </bean>
+    
+    
+	<!-- 12. rememberMeAuthenticationFilter -->
+	<bean id="rememberMeAuthenticationFilter" class="org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter">
+		<property name="rememberMeServices" ref="rememberMeServices"/>
+		<property name="authenticationManager" ref="authenticationManager"/>
+    </bean>
+	
+
+	<!-- 13. anonymousProcessingFilter 로그인 하지 않은 사용자들을 감시. 반드시 하지 않아도 되지만 한다. )-->
+	<bean id="anonymousProcessingFilter" class="org.springframework.security.web.authentication.AnonymousAuthenticationFilter">
+		<constructor-arg>
+			<value>BF93JFJ091N00Q7HF</value>
+		</constructor-arg>
+	</bean>
+	
+	<!-- 15. exceptionTranslationFilter
+		인증이 없는 접근은  Exception을 발생시킨다. API가 인증없이 들어올 경우 처리한다.
+	 -->	
+	<bean id="exceptionTranslationFilter" class="org.springframework.security.web.access.ExceptionTranslationFilter">
+		<constructor-arg>
+			<ref bean="authenticationEntryPoint" />
+		</constructor-arg>	
+	    <property name="accessDeniedHandler" ref="accessDeniedHandler"/>
+	</bean>
+
+	<!-- 16. filterSecurityInterceptor -->	
+	<bean id="filterSecurityInterceptor" class="org.springframework.security.web.access.intercept.FilterSecurityInterceptor">
+		<property name="authenticationManager" ref="authenticationManager"/>
+		<property name="accessDecisionManager" ref="affirmativeBased"/>
+		<property name="securityMetadataSource">
+			<!-- SEC-1256 -->
+	    	<security:filter-security-metadata-source request-matcher="regex">
+				<!-- Web -->
+				<security:intercept-url pattern="\A/admin.*\Z" access="ROLE_ADMIN" />		
+				<security:intercept-url pattern="\A/user/reactivate\Z" access="ROLE_INACTIVE, ROLE_USER" />
+				<security:intercept-url pattern="\A/basecamp\Z" access="ROLE_USER" />
+				<security:intercept-url pattern="\A/news\Z" access="ROLE_USER" />
+				<security:intercept-url pattern="\A/user/settings\Z" access="ROLE_USER" />
+				<security:intercept-url pattern="\A/user/alter_settings\Z" access="ROLE_USER" />
+				<security:intercept-url pattern="\A/.*/following\Z" access="ROLE_USER" />
+				<security:intercept-url pattern="\A/.*/follower\Z" access="ROLE_USER" />
+				
+				<!-- API(1.0) -->		
+				<security:intercept-url pattern="\A/1.0/follow/add.json.*\Z" access="ROLE_USER" />
+				<security:intercept-url pattern="\A/1.0/follow/delete.json.*\Z" access="ROLE_USER" />
+				<security:intercept-url pattern="\A/1.0/user/settings/update.json\Z" access="ROLE_USER" />
+				
+	    	</security:filter-security-metadata-source>
+		</property>
+	</bean>
+		
+
+
+	<!-- 로그아웃 성공 행들러 -->	
+	<bean id="customLogoutSuccessHandler" class="kr.co.sunnyvale.redwood.security.LogoutSuccessHandler">
+	    <property name="defaultTargetUrl" value="/" />
+    	<property name="alwaysUseDefaultTargetUrl" value="true"/>
+	</bean>
+	
+	
+	<!-- 인증관리자  -->
+	<bean id="authenticationManager" class="org.springframework.security.authentication.ProviderManager">
+		<constructor-arg>
+			<list>
+				<ref local="daoAuthenticationProvider"/>
+				<ref local="rememberMeAuthenticationProvider"/>
+			</list>
+		</constructor-arg>
+	</bean>
+
+	<!-- rememberMeService  -->
+	<bean id="rememberMeServices" class="kr.co.sunnyvale.redwood.security.RedwoodTokenBasedRememberMeServices">
+	    <property name="key" value="redwood" />
+    	<!--property name="tokenValiditySeconds" value="3600"/-->
+    	<!--property name="tokenRepository" ref="jdbcRememberMeTokenRepository"/-->
+    	<property name="userDetailsService" ref="customUserDetailsService"/>
+    	<property name="parameter" value="_redwood_remember_me"/>
+    	<property name="cookieName" value="REDWOOD_REMEMBER_ME"/>
+	</bean>
+
+
+	<!-- 데이테베이스 인증 프로바이더 -->	
+	<bean id="daoAuthenticationProvider" class="org.springframework.security.authentication.dao.DaoAuthenticationProvider">
+		<property name="passwordEncoder" ref="passwordEncoder"/>
+		<property name="saltSource" ref="saltSource"/>
+		<property name="userDetailsService" ref="customUserDetailsService"/>
+	</bean>	
+
+
+	<!-- RememberMe 인증 프로바이더 -->	
+	<bean id="rememberMeAuthenticationProvider" class="org.springframework.security.authentication.RememberMeAuthenticationProvider">
+		<property name="key" value="redwood"/>
+	</bean>	
+
+
+	<!-- 비밀번호 엔코더  -->
+	<bean id="passwordEncoder" class="org.springframework.security.authentication.encoding.ShaPasswordEncoder"/>
+	
+	<!-- 소금통 -->
+	<bean id="saltSource" class="org.springframework.security.authentication.dao.ReflectionSaltSource">
+		<property name="userPropertyToUse" value="salt"/>
+	</bean>	
+	
+	<!-- 유저디테일 서비스 -->
+	<bean id="customUserDetailsService" class="kr.co.sunnyvale.redwood.security.UserDetailsServiceImpl"/>
+	
+	<!-- 로그인 성공 핸들러 -->
+	<bean id="customLoginSuccessHandler" class="org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler">
+		<property name="defaultTargetUrl" value="/" />
+	</bean>
+
+	<!-- 로그인 실패 핸들러  -->
+	<bean id="customLoginFailureHandler" class="org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler">
+		<property name="defaultFailureUrl" value="/user/login?res=fail" />
+	</bean>	
+	
+	<!-- 웹인증 디테일 정보 확장 클래스  -->
+	<bean id="customWebuthenticationDetailsSource" class="kr.co.sunnyvale.redwood.security.RedwoodWebAuthenticationDetailsSource">
+		<property name="clazz" value="kr.co.sunnyvale.redwood.security.WebAuthenticationDetailsEx"/>
+	</bean>
+	
+	<!-- 인증 여부 확인 포인트  -->
+	<bean id="authenticationEntryPoint"  class="kr.co.sunnyvale.redwood.security.CustomLoginUrlAuthenticationEntryPoint">
+		<constructor-arg>
+			<value>/user/login</value>
+		</constructor-arg>
+   	</bean>
+
+	<!-- 접근제한 핸들러 -->
+	<bean id="accessDeniedHandler" class="org.springframework.security.web.access.AccessDeniedHandlerImpl">
+		<property name="errorPage" value="/error/403" />
+	</bean>		
+	
+	<!-- -->
+	<bean id="affirmativeBased" class="org.springframework.security.access.vote.AffirmativeBased" >
+		<constructor-arg>
+			<list>
+				<ref bean="roleVoter"/>
+				<ref bean="expressionVoter"/>
+				<ref bean="authenticatedVoter"/>
+			</list>
+		</constructor-arg>
+	</bean>		
+
+	<!-- -->
+	<bean class="org.springframework.security.access.vote.RoleVoter" id="roleVoter"/>
+
+	<!-- -->
+	<bean class="org.springframework.security.web.access.expression.WebExpressionVoter" id="expressionVoter">
+		<property name="expressionHandler" ref="expressionHandler"/>
+		<!--property name="expressionHandler" ref="customExpressionHandler"/-->		
+	</bean>
+
+	<!-- -->
+	<bean id="expressionHandler" class="org.springframework.security.web.access.expression.DefaultWebSecurityExpressionHandler"/>
+	<!--bean class="com.packtpub.springsecurity.security.CustomWebSecurityExpressionHandler" id="customExpressionHandler"/-->
+
+	<!-- -->
+	<bean class="org.springframework.security.access.vote.AuthenticatedVoter" id="authenticatedVoter"/>
+	<bean id="textEncryptor" class="org.springframework.security.crypto.encrypt.Encryptors"
+		factory-method="noOpText" />
+				
+</beans>	

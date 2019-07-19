@@ -1,11 +1,25 @@
 package com.cafe24.mysite.repository.vo;
 
-public class GuestbookVo {
+import java.io.Serializable;
+
+public class GuestbookVo{
 	private Long no;
 	private String name;
 	private String password;
 	private String contents;
+	private String reg_date;
 	
+	public GuestbookVo() {
+		
+	}
+	
+	public GuestbookVo(Long no, String name, String password, String contents, String reg_date) {
+		this.no = no;
+		this.name = name;
+		this.password = password;
+		this.contents = contents;
+		this.reg_date = reg_date;
+	}
 	public Long getNo() {
 		return no;
 	}
@@ -41,5 +55,5 @@ public class GuestbookVo {
 	public void setReg_date(String reg_date) {
 		this.reg_date = reg_date;
 	}
-	private String reg_date;
+	
 }

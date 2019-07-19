@@ -24,11 +24,17 @@ public class GuestbookController {
 	private GuestbookService guestbookService;
 	
 	
-	@RequestMapping( "" )
+	@RequestMapping("")
 	public String index( Model model ,HttpSession session){
 		List<GuestbookVo> list = guestbookService.getContentList();
 		model.addAttribute( "list", list );
 		return "guestbook/list";
+	}
+	
+	@RequestMapping(value="/spa", method=RequestMethod.GET)
+	public String timeline(Model model){
+		
+		return "guestbook/index-spa";
 	}
 	
 	@RequestMapping( value="/delete/{no}", method=RequestMethod.GET )
@@ -49,5 +55,7 @@ public class GuestbookController {
 		guestbookService.writeContent( vo );
 		return "redirect:/guestbook";
 	}
+	
 
+	
 }

@@ -22,6 +22,7 @@ public class UserDao {
 		System.out.println("UserDao Constructor");
 	}
 	
+	
 	public int update(UserVo vo) {
 		return sqlSession.update( "user.update", vo );
 	}
@@ -51,4 +52,5 @@ public class UserDao {
 		UserVo userVo = sqlSession.selectOne("user.getByEmail", email);
 		return userVo;
 	}
+
 }
